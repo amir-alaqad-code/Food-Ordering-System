@@ -22,9 +22,13 @@ This project is a simple microservices-based system built using Spring Boot.
 ---
 
 ## How to Run
-
-### 1. Run Payment Service
-```bash
-cd payment-service/payment-service
+cd order-service/order-service
 mvnw.cmd clean package
-java -jar target/payment-service-0.0.1-SNAPSHOT.jar
+java -jar target/order-service-0.0.1-SNAPSHOT.jar --server.port=8081
+
+--- 
+
+## Testing 
+curl -X POST http://localhost:8081/api/orders/create -H "Content-Type: text/plain" -d "order123"
+
+
