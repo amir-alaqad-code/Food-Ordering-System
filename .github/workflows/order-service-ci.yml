@@ -1,0 +1,33 @@
+name: Order Service CI
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  build-order-service:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Build Order Service
+        working-directory: order-service
+        run: chmod +x mvnw && ./mvnw clean package
+
+      - name: Upload Order Service Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: order-service-jar
+          path: order-service/target/*.jar
