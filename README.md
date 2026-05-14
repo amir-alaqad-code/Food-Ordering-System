@@ -17,6 +17,8 @@ The system represents a simple food ordering workflow where a customer places an
 
 The project is designed using **Microservices Architecture**, where each service has a clear business responsibility and can be built, tested, and run independently.
 
+In the current implementation, the Order Service coordinates the main order workflow by calling the Payment Service, Restaurant Service, Delivery Service, and Notification Service using REST APIs.
+
 ---
 
 ## 2. Main Workflow
@@ -47,7 +49,7 @@ The project contains five microservices:
 
 | Microservice | Responsibility | Port |
 |---|---|---|
-| Order Service | Creates orders and communicates with Payment Service | 8080 |
+| Order Service | Creates orders and coordinates the main workflow with other services | 8080 |
 | Payment Service | Processes payment confirmation | 8081 |
 | Restaurant Service | Accepts restaurant orders | 8082 |
 | Delivery Service | Assigns a driver for the order | 8083 |
@@ -118,7 +120,7 @@ Food-Ordering-System/
 ### 6.1 Order Service
 
 **Responsibility:**  
-The Order Service creates customer orders and communicates with the Payment Service to process payment.
+The Order Service creates customer orders and coordinates the main workflow by calling the Payment Service, Restaurant Service, Delivery Service, and Notification Service.
 
 **Port:**  
 ```text
@@ -142,7 +144,11 @@ Order for customer 1 from restaurant 1 with total amount 50
 
 **Expected Response:**  
 ```text
-Order created successfully. Payment completed successfully for order: Order for customer 1 from restaurant 1 with total amount 50
+Order created successfully.
+Payment completed successfully for order: Order for customer 1 from restaurant 1 with total amount 50
+Restaurant accepted the order: Order for customer 1 from restaurant 1 with total amount 50
+Driver assigned for the order: Order for customer 1 from restaurant 1 with total amount 50
+Notification sent to customer: Your order has been confirmed: Order for customer 1 from restaurant 1 with total amount 50
 ```
 
 ---
@@ -279,15 +285,32 @@ Notification sent to customer: Your order has been confirmed
 
 The project uses **REST API communication** between microservices.
 
-In the current implementation, the **Order Service** communicates with the **Payment Service** using `RestTemplate`.
+In the current implementation, the **Order Service** acts as the main workflow coordinator. It receives the order request and then calls the **Payment Service**, **Restaurant Service**, **Delivery Service**, and **Notification Service** in sequence using `RestTemplate`.
 
-Because the Order Service is running inside Docker and the Payment Service is running locally on the host machine, the Order Service uses:
+The implemented workflow is:
+
+```text
+Order Service
+        ↓
+Payment Service
+        ↓
+Restaurant Service
+        ↓
+Delivery Service
+        ↓
+Notification Service
+```
+
+Because the Order Service is running inside Docker and the other services are running locally on the host machine, the Order Service uses `host.docker.internal` to access them.
 
 ```text
 http://host.docker.internal:8081/api/payments/process
+http://host.docker.internal:8082/api/restaurants/accept
+http://host.docker.internal:8083/api/deliveries/assign
+http://host.docker.internal:8084/api/notifications/send
 ```
 
-This allows the Docker container to access the Payment Service running on the laptop.
+This allows the Docker container to access the services running on the laptop.
 
 ---
 
@@ -396,23 +419,7 @@ http://localhost:8081
 
 ---
 
-### 10.2 Run Order Service Using Docker
-
-```bash
-cd order-service
-docker build -t order-service .
-docker run -p 8080:8080 --name order-service-container order-service
-```
-
-The service runs on:
-
-```text
-http://localhost:8080
-```
-
----
-
-### 10.3 Run Restaurant Service
+### 10.2 Run Restaurant Service
 
 ```bash
 cd restaurant-service
@@ -427,7 +434,7 @@ http://localhost:8082
 
 ---
 
-### 10.4 Run Delivery Service
+### 10.3 Run Delivery Service
 
 ```bash
 cd delivery-service
@@ -442,7 +449,7 @@ http://localhost:8083
 
 ---
 
-### 10.5 Run Notification Service
+### 10.4 Run Notification Service
 
 ```bash
 cd notification-service
@@ -453,6 +460,22 @@ The service runs on:
 
 ```text
 http://localhost:8084
+```
+
+---
+
+### 10.5 Run Order Service Using Docker
+
+```bash
+cd order-service
+docker build -t order-service .
+docker run -p 8080:8080 --name order-service-container order-service
+```
+
+The service runs on:
+
+```text
+http://localhost:8080
 ```
 
 ---
@@ -500,13 +523,16 @@ mvnw.cmd package
 
 ## 12. Testing Example Using Postman
 
-### Test Order Service with Payment Service
+### Test Full Order Workflow
 
 Before testing, make sure:
 
 1. Docker Desktop is running.
 2. Payment Service is running on port `8081`.
-3. Order Service container is running on port `8080`.
+3. Restaurant Service is running on port `8082`.
+4. Delivery Service is running on port `8083`.
+5. Notification Service is running on port `8084`.
+6. Order Service container is running on port `8080`.
 
 Send this request using Postman:
 
@@ -529,7 +555,11 @@ Order for customer 1 from restaurant 1 with total amount 50
 Expected response:
 
 ```text
-Order created successfully. Payment completed successfully for order: Order for customer 1 from restaurant 1 with total amount 50
+Order created successfully.
+Payment completed successfully for order: Order for customer 1 from restaurant 1 with total amount 50
+Restaurant accepted the order: Order for customer 1 from restaurant 1 with total amount 50
+Driver assigned for the order: Order for customer 1 from restaurant 1 with total amount 50
+Notification sent to customer: Your order has been confirmed: Order for customer 1 from restaurant 1 with total amount 50
 ```
 
 ---
